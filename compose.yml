@@ -18,12 +18,12 @@ services:
       KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/dev/certs/keycloak-server.key.pem
     volumes:
       # renamed because of https://github.com/keycloak/keycloak/issues/37569
-      - ./keycloak/cryptomator-realm.json:/opt/keycloak/data/import/keycloak.json
+      - ${KEYCLOAK_REALM_FILE:-./keycloak/cryptomator-realm.json}:/opt/keycloak/data/import/keycloak.json
       - ./certs:/opt/keycloak/dev/certs
     # hub to Keycloak communication inside Docker network (http://keycloak:8180) goes to the container internal port! Therefore, we need to start keycloak with the same port `--http-port 8180`
     command: start-dev --import-realm --db=dev-mem --health-enabled=true --hostname ${HUB_KEYCLOAK_HOSTNAME} --http-port ${HUB_KEYCLOAK_HTTP_PORT}
     healthcheck:
-      test: [ "CMD-SHELL", "curl -v --fail http://127.0.0.1:${HUB_KEYCLOAK_HTTP_PORT}/realms/cryptomator/.well-known/openid-configuration" ]
+      test: [ "CMD-SHELL", "curl -v --fail http://127.0.0.1:${HUB_KEYCLOAK_HTTP_PORT}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration" ]
       interval: 5s
       timeout: 10s
       retries: 15
@@ -40,16 +40,16 @@ services:
 
         # fix for Docker Desktop 4.42.1 based on https://github.com/keycloak/keycloak/discussions/12155
         /opt/keycloak/bin/kcadm.sh update --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm master --user admin --password admin realms/master -s sslRequired=NONE
-        /opt/keycloak/bin/kcadm.sh update --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm cryptomator --user admin --password admin realms/cryptomator -s sslRequired=NONE
+        /opt/keycloak/bin/kcadm.sh update --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm ${HUB_KEYCLOAK_REALM} --user admin --password admin realms/${HUB_KEYCLOAK_REALM} -s sslRequired=NONE
 
         # enable direct access grants in client cryptomator and cryptomatorhub for integration testing and manual exploration
-        CLIENT_ID=`/opt/keycloak/bin/kcadm.sh get clients --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm cryptomator --user admin --password admin --fields id -q clientId=cryptomator | grep "id" | sed -e 's/.*"id" : //g' | sed -e 's/"//g'`
-        /opt/keycloak/bin/kcadm.sh update clients/$$CLIENT_ID --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm cryptomator --user admin --password admin  -s "directAccessGrantsEnabled=true" -s 'redirectUris=["http://localhost:${HUB_PORT}/*", "http://127.0.0.1:${HUB_PORT}/*", "x-katta-action:oauth"]'
-        CLIENT_ID=`/opt/keycloak/bin/kcadm.sh get clients --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm cryptomator --user admin --password admin --fields id -q clientId=cryptomatorhub | grep "id" | sed -e 's/.*"id" : //g' | sed -e 's/"//g'`
-        /opt/keycloak/bin/kcadm.sh update clients/$$CLIENT_ID --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm cryptomator --user admin --password admin -s "directAccessGrantsEnabled=true" -s 'redirectUris=["http://localhost:${HUB_PORT}/*", "http://127.0.0.1:${HUB_PORT}/*", "x-katta-action:oauth"]'
+        CLIENT_ID=`/opt/keycloak/bin/kcadm.sh get clients --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm ${HUB_KEYCLOAK_REALM} --user admin --password admin --fields id -q clientId=cryptomator | grep "id" | sed -e 's/.*"id" : //g' | sed -e 's/"//g'`
+        /opt/keycloak/bin/kcadm.sh update clients/$$CLIENT_ID --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm ${HUB_KEYCLOAK_REALM} --user admin --password admin  -s "directAccessGrantsEnabled=true" -s 'redirectUris=["http://localhost:${HUB_PORT}/*", "http://127.0.0.1:${HUB_PORT}/*", "x-katta-action:oauth"]'
+        CLIENT_ID=`/opt/keycloak/bin/kcadm.sh get clients --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm ${HUB_KEYCLOAK_REALM} --user admin --password admin --fields id -q clientId=cryptomatorhub | grep "id" | sed -e 's/.*"id" : //g' | sed -e 's/"//g'`
+        /opt/keycloak/bin/kcadm.sh update clients/$$CLIENT_ID --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm ${HUB_KEYCLOAK_REALM} --user admin --password admin -s "directAccessGrantsEnabled=true" -s 'redirectUris=["http://localhost:${HUB_PORT}/*", "http://127.0.0.1:${HUB_PORT}/*", "x-katta-action:oauth"]'
         # allow redirect URI from localhost for "attended" mode for client cryptomatorhub, i.e. dev wants to interact directly with the running setup
-        CLIENT_ID_CRYPTOMATORHUB=`/opt/keycloak/bin/kcadm.sh get clients --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm cryptomator --user admin --password admin --fields id -q clientId=cryptomatorhub | grep "id" | sed -e 's/.*"id" : //g' | sed -e 's/"//g'`
-        /opt/keycloak/bin/kcadm.sh update clients/$$CLIENT_ID_CRYPTOMATORHUB --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm cryptomator --user admin --password admin -s 'redirectUris=["${HUB_URL}/*", "http://127.0.0.1:${HUB_PORT}/*", "x-katta-action:oauth"]'
+        CLIENT_ID_CRYPTOMATORHUB=`/opt/keycloak/bin/kcadm.sh get clients --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm ${HUB_KEYCLOAK_REALM} --user admin --password admin --fields id -q clientId=cryptomatorhub | grep "id" | sed -e 's/.*"id" : //g' | sed -e 's/"//g'`
+        /opt/keycloak/bin/kcadm.sh update clients/$$CLIENT_ID_CRYPTOMATORHUB --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm ${HUB_KEYCLOAK_REALM} --user admin --password admin -s 'redirectUris=["${HUB_URL}/*", "http://127.0.0.1:${HUB_PORT}/*", "x-katta-action:oauth"]'
 
     depends_on:
       keycloak-ready:
@@ -153,8 +153,8 @@ services:
           # start reverse proxy to keycloak
           systemctl start nginx.service
           # verify reverse proxy
-          curl --fail http://localhost:${HUB_KEYCLOAK_HTTP_PORT}/realms/cryptomator/.well-known/openid-configuration
-          curl --fail http://127.0.0.1:${HUB_KEYCLOAK_HTTP_PORT}/realms/cryptomator/.well-known/openid-configuration
+          curl --fail http://localhost:${HUB_KEYCLOAK_HTTP_PORT}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration
+          curl --fail http://127.0.0.1:${HUB_KEYCLOAK_HTTP_PORT}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration
         fi
 
         /minio server /data --address :${MINIO_PORT} --console-address :${MINIO_CONSOLE_PORT}
@@ -169,7 +169,7 @@ services:
       keycloak-ready:
         condition: service_completed_successfully
     volumes:
-      - ./setup:/setup
+      - ${SETUP_DIR:-./setup}:/setup
       - ./docker/nginx/keycloak.conf.template:/etc/nginx/conf.d/keycloak.conf.template:ro
     environment:
       HUB_KEYCLOAK_HTTP_PORT: ${HUB_KEYCLOAK_HTTP_PORT}
@@ -190,8 +190,8 @@ services:
           # start reverse proxy to keycloak
           systemctl start nginx.service
           # verify reverse proxy
-          curl --fail http://localhost:${HUB_KEYCLOAK_HTTP_PORT}/realms/cryptomator/.well-known/openid-configuration
-          curl --fail http://127.0.0.1:${HUB_KEYCLOAK_HTTP_PORT}/realms/cryptomator/.well-known/openid-configuration
+          curl --fail http://localhost:${HUB_KEYCLOAK_HTTP_PORT}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration
+          curl --fail http://127.0.0.1:${HUB_KEYCLOAK_HTTP_PORT}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration
         fi
 
         ls /setup
@@ -232,11 +232,11 @@ services:
         /mc idp openid ls myminio
         /mc idp openid info myminio
 
-        /mc admin user add myminio testuser top-secret
+        /mc admin user add myminio ${MINIO_USER_ACCESS_KEY} ${MINIO_USER_SECRET_KEY}
         /mc admin policy create myminio testuser_accesspolicy /setup/minio_static/access_bucket_policy.json
         /mc admin policy create myminio testuser_createpolicy /setup/minio_static/create_bucket_policy.json
-        /mc admin policy attach myminio testuser_accesspolicy --user testuser
-        /mc admin policy attach myminio testuser_createpolicy --user testuser
+        /mc admin policy attach myminio testuser_accesspolicy --user ${MINIO_USER_ACCESS_KEY}
+        /mc admin policy attach myminio testuser_createpolicy --user ${MINIO_USER_ACCESS_KEY}
 
   minio_trace:
     profiles: [ local, demo ]
@@ -261,7 +261,7 @@ services:
     build:
       dockerfile: docker/hub/Dockerfile
       args:
-        KATTA_SERVER_IMAGE: "ghcr.io/shift7-ch/katta-server:latest"
+        KATTA_SERVER_IMAGE: "${KATTA_SERVER_IMAGE:-ghcr.io/shift7-ch/katta-server:latest}"
     depends_on:
       keycloak-ready:
         condition: service_completed_successfully
@@ -332,8 +332,8 @@ services:
           # start reverse proxy to keycloak and minio
           nginx
           # verify reverse proxy
-          curl --fail http://localhost:${HUB_KEYCLOAK_HTTP_PORT}/realms/cryptomator/.well-known/openid-configuration
-          curl --fail http://127.0.0.1:${HUB_KEYCLOAK_HTTP_PORT}/realms/cryptomator/.well-known/openid-configuration
+          curl --fail http://localhost:${HUB_KEYCLOAK_HTTP_PORT}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration
+          curl --fail http://127.0.0.1:${HUB_KEYCLOAK_HTTP_PORT}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration
         fi
 
         # inject ports
@@ -361,7 +361,7 @@ services:
       hub:
         condition: service_healthy
     volumes:
-      - ./setup:/setup
+      - ${SETUP_DIR:-./setup}:/setup
       - ./docker/nginx/keycloak.conf.template:/etc/nginx/conf.d/keycloak.conf.template:ro
       - ./docker/nginx/hub.conf.template:/etc/nginx/conf.d/hub.conf.template:ro
     entrypoint: [ "/bin/bash","-c" ]
