@@ -12,7 +12,7 @@ Extracted with its history from [katta-clientlib](https://github.com/shift7-ch/k
 
 | Path                                                               | Description                                                                              |
 |--------------------------------------------------------------------|------------------------------------------------------------------------------------------|
-| [`docker-compose-hub-keycloak-minio.yml`](docker-compose-hub-keycloak-minio.yml) | Services for Katta Server, Keycloak, PostgreSQL and MinIO with the `local`, `demo` and `hybrid` profiles. |
+| [`compose.yml`](compose.yml) | Services for Katta Server, Keycloak, PostgreSQL and MinIO with the `local`, `demo` and `hybrid` profiles. |
 | [`docker`](docker)                                                 | Images for Katta Server, MinIO and the setup jobs, and nginx reverse proxy templates.    |
 | [`certs`](certs)                                                   | Self-signed certificate for Keycloak HTTPS. For development only.                         |
 
