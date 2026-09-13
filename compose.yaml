@@ -57,7 +57,7 @@ services:
 
   keycloak-ready:
     profiles: [ local, demo, hybrid ]
-    image: nginx
+    image: nginx:1.31.5
     volumes:
       - ./nginx/keycloak.conf.template:/etc/nginx/conf.d/keycloak.conf.template:ro
     entrypoint: [ "/bin/bash","-c" ]
@@ -430,7 +430,7 @@ services:
   # last service(s) must not exit for up --wait to succeed...
   wait:
     profiles: [ local, demo ]
-    image: nginx
+    image: nginx:1.31.5
     depends_on:
       minio_trace:
         condition: service_started
@@ -438,7 +438,7 @@ services:
   # last service(s) must not exit for up --wait to succeed...
   wait_demo:
     profiles: [ demo ]
-    image: nginx
+    image: nginx:1.31.5
     depends_on:
       hub_setup_storage_profile:
         condition: service_completed_successfully

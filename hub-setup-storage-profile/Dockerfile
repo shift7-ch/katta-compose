@@ -1,2 +1,2 @@
-FROM nginx
+FROM nginx:1.31.5
 RUN apt-get update && apt-get install -y jq
