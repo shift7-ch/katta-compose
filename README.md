@@ -7,8 +7,8 @@ Extracted with its history from [katta-clientlib](https://github.com/shift7-ch/k
 ## Usage
 
 ```bash
-docker compose --env-file local.env --profile demo up --wait
-docker compose --env-file local.env --profile demo down
+docker compose --profile demo up --wait
+docker compose --profile demo down
 ```
 
 > [!TIP]
@@ -24,7 +24,8 @@ docker compose --env-file local.env --profile demo down
 
 ### Configuration
 
-All variables are set in [`local.env`](local.env). Copy it to provide your own values.
+All variables are set in [`.env`](.env), which Compose loads automatically.
+To provide your own values, pass a complete copy with `--env-file`, which replaces `.env`.
 
 | Variable                                         | Default                                 | Description                                                                          |
 |--------------------------------------------------|-----------------------------------------|--------------------------------------------------------------------------------------|
@@ -33,7 +34,7 @@ All variables are set in [`local.env`](local.env). Copy it to provide your own v
 | `KATTA_SERVER_IMAGE`                             | `ghcr.io/shift7-ch/katta-server:latest` | Image to build Katta Server from.                                                    |
 | `MINIO_USER_ACCESS_KEY`, `MINIO_USER_SECRET_KEY` |                                         | MinIO user created for the storage profile with static storage access.               |
 
-Relative paths resolve against the directory containing `compose.yml`.
+Relative paths resolve against the directory containing `compose.yaml`.
 Use absolute paths to provide a realm or setup files from another project.
 
 ### Provisioned Users
@@ -58,14 +59,17 @@ The realm also contains the service accounts of the `cryptomatorhub-system` clie
 
 ## Contents
 
-| Path                         | Description                                                                           |
-|------------------------------|---------------------------------------------------------------------------------------|
-| [`compose.yml`](compose.yml) | Services for Katta Server, Keycloak, PostgreSQL and MinIO.                            |
-| [`local.env`](local.env)     | Variables for running all services locally.                                           |
-| [`docker`](docker)           | Images for Katta Server, MinIO and the setup jobs, and nginx reverse proxy templates. |
-| [`keycloak`](keycloak)       | Default realm with the clients required by Katta Server.                              |
-| [`setup`](setup)             | Default MinIO policies and storage profiles.                                          |
-| [`certs`](certs)             | Self-signed certificate for Keycloak HTTPS. For development only.                     |
+| Path                                                     | Description                                                                          |
+|----------------------------------------------------------|--------------------------------------------------------------------------------------|
+| [`compose.yaml`](compose.yaml)                           | Services for Katta Server, Keycloak, PostgreSQL and MinIO.                           |
+| [`.env`](.env)                                           | Variables for running all services locally.                                          |
+| [`hub`](hub)                                             | Image for Katta Server with an nginx reverse proxy.                                  |
+| [`hub-setup-storage-profile`](hub-setup-storage-profile) | Image for the job creating the demo storage profiles in Katta Server.                |
+| [`minio`](minio)                                         | Image for MinIO with an nginx reverse proxy.                                         |
+| [`minio-setup`](minio-setup)                             | Image for the jobs configuring and tracing MinIO.                                    |
+| [`nginx`](nginx)                                         | Reverse proxy templates for Keycloak, Katta Server and MinIO.                        |
+| [`keycloak`](keycloak)                                   | Default realm with the clients required by Katta Server, and a self-signed certificate for HTTPS. For development only. |
+| [`setup`](setup)                                         | Default MinIO policies and storage profiles.                                         |
 
 ## License
 

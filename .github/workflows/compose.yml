@@ -25,10 +25,10 @@ jobs:
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io --username "${{ github.actor }}" --password-stdin
       - name: Start ${{ matrix.profile }} profile
-        run: docker compose --env-file local.env --profile ${{ matrix.profile }} up --build --wait --wait-timeout 900
+        run: docker compose --profile ${{ matrix.profile }} up --build --wait --wait-timeout 900
       - name: Show logs
         if: ${{ failure() }}
-        run: docker compose --env-file local.env --profile ${{ matrix.profile }} logs --no-color
+        run: docker compose --profile ${{ matrix.profile }} logs --no-color
       - name: Stop
         if: ${{ always() }}
-        run: docker compose --env-file local.env --profile ${{ matrix.profile }} down --volumes
+        run: docker compose --profile ${{ matrix.profile }} down --volumes

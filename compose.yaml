@@ -19,7 +19,7 @@ services:
     volumes:
       # renamed because of https://github.com/keycloak/keycloak/issues/37569
       - ${KEYCLOAK_REALM_FILE:-./keycloak/cryptomator-realm.json}:/opt/keycloak/data/import/keycloak.json
-      - ./certs:/opt/keycloak/dev/certs
+      - ./keycloak/certs:/opt/keycloak/dev/certs
     # hub to Keycloak communication inside Docker network (http://keycloak:8180) goes to the container internal port! Therefore, we need to start keycloak with the same port `--http-port 8180`
     command: start-dev --import-realm --db=dev-mem --health-enabled=true --hostname ${HUB_KEYCLOAK_HOSTNAME} --http-port ${HUB_KEYCLOAK_HTTP_PORT}
     healthcheck:
@@ -59,7 +59,7 @@ services:
     profiles: [ local, demo, hybrid ]
     image: nginx
     volumes:
-      - ./docker/nginx/keycloak.conf.template:/etc/nginx/conf.d/keycloak.conf.template:ro
+      - ./nginx/keycloak.conf.template:/etc/nginx/conf.d/keycloak.conf.template:ro
     entrypoint: [ "/bin/bash","-c" ]
     command:
       - |
@@ -113,7 +113,7 @@ services:
   minio:
     profiles: [ local, demo ]
     build:
-      dockerfile: docker/minio/Dockerfile
+      context: ./minio
     depends_on:
       keycloak-ready:
         condition: service_completed_successfully
@@ -136,7 +136,7 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - ./docker/nginx/keycloak.conf.template:/etc/nginx/conf.d/keycloak.conf.template:ro
+      - ./nginx/keycloak.conf.template:/etc/nginx/conf.d/keycloak.conf.template:ro
     entrypoint: [ "/bin/bash","-c" ]
     command:
       - |
@@ -162,7 +162,7 @@ services:
   minio_setup:
     profiles: [ local, demo ]
     build:
-      dockerfile: docker/minio_setup/Dockerfile
+      context: ./minio-setup
     depends_on:
       minio:
         condition: service_healthy
@@ -170,7 +170,7 @@ services:
         condition: service_completed_successfully
     volumes:
       - ${SETUP_DIR:-./setup}:/setup
-      - ./docker/nginx/keycloak.conf.template:/etc/nginx/conf.d/keycloak.conf.template:ro
+      - ./nginx/keycloak.conf.template:/etc/nginx/conf.d/keycloak.conf.template:ro
     environment:
       HUB_KEYCLOAK_HTTP_PORT: ${HUB_KEYCLOAK_HTTP_PORT}
       HUB_KEYCLOAK_HOSTNAME: ${HUB_KEYCLOAK_HOSTNAME}
@@ -241,7 +241,7 @@ services:
   minio_trace:
     profiles: [ local, demo ]
     build:
-      dockerfile: docker/minio_setup/Dockerfile
+      context: ./minio-setup
     depends_on:
       minio_setup:
         # restarts during minio setup!
@@ -259,7 +259,7 @@ services:
   hub:
     profiles: [ local, demo, hybrid ]
     build:
-      dockerfile: docker/hub/Dockerfile
+      context: ./hub
       args:
         KATTA_SERVER_IMAGE: "${KATTA_SERVER_IMAGE:-ghcr.io/shift7-ch/katta-server:latest}"
     depends_on:
@@ -311,8 +311,8 @@ services:
     ports:
       - "${HUB_PORT}:${HUB_PORT}"
     volumes:
-      - ./docker/nginx/keycloak.conf.template:/etc/nginx/conf.d/keycloak.conf.template:ro
-      - ./docker/nginx/minio.conf.template:/etc/nginx/conf.d/minio.conf.template:ro
+      - ./nginx/keycloak.conf.template:/etc/nginx/conf.d/keycloak.conf.template:ro
+      - ./nginx/minio.conf.template:/etc/nginx/conf.d/minio.conf.template:ro
     entrypoint: [ "/bin/bash","-c" ]
     command:
       - |
@@ -354,7 +354,7 @@ services:
   hub_setup_storage_profile:
     profiles: [ demo ]
     build:
-      dockerfile: docker/hub_setup_storage_profile/Dockerfile
+      context: ./hub-setup-storage-profile
     depends_on:
       keycloak-ready:
         condition: service_completed_successfully
@@ -362,8 +362,8 @@ services:
         condition: service_healthy
     volumes:
       - ${SETUP_DIR:-./setup}:/setup
-      - ./docker/nginx/keycloak.conf.template:/etc/nginx/conf.d/keycloak.conf.template:ro
-      - ./docker/nginx/hub.conf.template:/etc/nginx/conf.d/hub.conf.template:ro
+      - ./nginx/keycloak.conf.template:/etc/nginx/conf.d/keycloak.conf.template:ro
+      - ./nginx/hub.conf.template:/etc/nginx/conf.d/hub.conf.template:ro
     entrypoint: [ "/bin/bash","-c" ]
     environment:
       HUB_URL: ${HUB_URL}
