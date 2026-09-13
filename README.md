@@ -33,6 +33,7 @@ To provide your own values, pass a complete copy with `--env-file`, which replac
 | `SETUP_DIR`                                      | `./setup`                               | Directory with the MinIO policies and storage profiles, using the layout of [`setup`](setup). |
 | `KATTA_SERVER_IMAGE`                             | `ghcr.io/shift7-ch/katta-server:latest` | Image to build Katta Server from.                                                    |
 | `MINIO_USER_ACCESS_KEY`, `MINIO_USER_SECRET_KEY` |                                         | MinIO user created for the storage profile with static storage access.               |
+| `HUB_INITIAL_LICENSE`, `HUB_INITIAL_ID`          |                                         | License of Katta Server. [`.env`](.env) sets a test license.                         |
 
 Relative paths resolve against the directory containing `compose.yaml`.
 Use absolute paths to provide a realm or setup files from another project.
@@ -56,6 +57,22 @@ The realm also contains the service accounts of the `cryptomatorhub-system` clie
 | Keycloak      | http://localhost:8380 | http://localhost:8380/realms/cryptomator/.well-known/openid-configuration |
 | MinIO Console | http://localhost:9101 |                                                                           |
 | MinIO S3 API  | http://localhost:9100 |                                                                           |
+
+### MinIO STS Setup
+
+To configure MinIO for STS storage access with the `local` profile, use the `setup minio` command of the
+[Katta Admin CLI](https://github.com/shift7-ch/katta-clientlib/blob/main/admin-cli/README.md#setup-minio-using-oidc-provider-and-security-token-service-sts-with-setup-command):
+
+```bash
+katta setup minio --hubUrl http://localhost:8280 --endpointUrl http://localhost:9100 --accessKey=minioadmin --secretKey=minioadmin
+```
+
+### Katta Desktop
+
+To connect with Katta Desktop over plain HTTP without TLS, copy the [Katta Server.cyberduckprofile](https://docs.katta.io) to:
+
+- **macOS** `~/Library/Group Containers/KD9X6Y7KA2.cloud.katta.desktop/Library/Application Support/Katta/Profiles`
+- **Windows** `%APPDATA%\Katta\Profiles`
 
 ## Contents
 
