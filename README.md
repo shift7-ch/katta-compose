@@ -34,6 +34,7 @@ To provide your own values, pass a complete copy with `--env-file`, which replac
 | `KATTA_SERVER_IMAGE`                             | `ghcr.io/shift7-ch/katta-server:latest` | Image to build Katta Server from.                                                    |
 | `MINIO_USER_ACCESS_KEY`, `MINIO_USER_SECRET_KEY` |                                         | MinIO user created for the storage profile with static storage access.               |
 | `HUB_INITIAL_LICENSE`, `HUB_INITIAL_ID`          |                                         | License of Katta Server. [`.env`](.env) sets a test license.                         |
+| `CSP_CONNECT_SRC_EXTRA`                          |                                         | Additional `connect-src` sources for the Content-Security-Policy header of Katta Server, such as the S3 and STS endpoints of storage profiles. |
 
 Relative paths resolve against the directory containing `compose.yaml`.
 Use absolute paths to provide a realm or setup files from another project.
