@@ -49,6 +49,19 @@ Use absolute paths to provide a realm or setup files from another project.
 
 The realm also contains the service accounts of the `cryptomatorhub-system` client used by Katta Server and of the `cryptomatorhub-cli` client used by the Katta Admin CLI.
 
+### Katta Admin CLI Login
+
+The `storageprofile` and `accesstoken` commands of the
+[Katta Admin CLI](https://github.com/shift7-ch/katta-clientlib/blob/main/admin-cli/README.md#authentication) log in with the
+authorization code flow and receive the code on a loopback redirect URI with a random port (`http://127.0.0.1:<random>/<random>`).
+The `cryptomator` and `cryptomatorhub` clients therefore register `http://127.0.0.1/*` as a valid redirect URI, which Keycloak
+matches for any port on loopback addresses. `http://localhost/*` is registered alongside for Katta Web, as Keycloak compares the
+host literally and does not treat `localhost` and `127.0.0.1` as equivalent.
+
+> [!WARNING]
+> A port-less loopback redirect URI is flagged by [CVE-2024-8883](https://github.com/keycloak/keycloak/issues/33115) as unsuitable
+> for production. For a hardened Keycloak, register a fixed loopback port instead and pass a token with `--accessToken`.
+
 ### Endpoints
 
 | Component     | URL                   | Discovery                                                                 |
