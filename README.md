@@ -16,24 +16,24 @@ docker compose --profile demo down
 
 ### Profiles
 
-| Profile  | Description                                                                                                  |
-|----------|--------------------------------------------------------------------------------------------------------------|
-| `local`  | Katta Server, Keycloak, PostgreSQL and MinIO.                                                                |
+| Profile  | Description                                                                                                 |
+|----------|-------------------------------------------------------------------------------------------------------------|
+| `local`  | Katta Server, Keycloak, PostgreSQL and MinIO.                                                               |
 | `demo`   | Same as `local`, and creates storage profiles for MinIO with static and STS storage access in Katta Server. |
-| `hybrid` | Katta Server and PostgreSQL only, using an existing Keycloak and MinIO configured in the env file.           |
+| `hybrid` | Katta Server and PostgreSQL only, using an existing Keycloak and MinIO configured in the env file.          |
 
 ### Configuration
 
 All variables are set in [`.env`](.env), which Compose loads automatically.
 To provide your own values, pass a complete copy with `--env-file`, which replaces `.env`.
 
-| Variable                                         | Default                                 | Description                                                                          |
-|--------------------------------------------------|-----------------------------------------|--------------------------------------------------------------------------------------|
-| `KEYCLOAK_REALM_FILE`                            | `./keycloak/cryptomator-realm.json`     | Realm imported into Keycloak. Its name must match `HUB_KEYCLOAK_REALM`.              |
-| `SETUP_DIR`                                      | `./setup`                               | Directory with the MinIO policies and storage profiles, using the layout of [`setup`](setup). |
-| `KATTA_SERVER_IMAGE`                             | `ghcr.io/shift7-ch/katta-server:latest` | Image to build Katta Server from.                                                    |
-| `MINIO_USER_ACCESS_KEY`, `MINIO_USER_SECRET_KEY` |                                         | MinIO user created for the storage profile with static storage access.               |
-| `HUB_INITIAL_LICENSE`, `HUB_INITIAL_ID`          |                                         | License of Katta Server. [`.env`](.env) sets a test license.                         |
+| Variable                                         | Default                                 | Description                                                                                                                                    |
+|--------------------------------------------------|-----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| `KEYCLOAK_REALM_FILE`                            | `./keycloak/cryptomator-realm.json`     | Realm imported into Keycloak. Its name must match `HUB_KEYCLOAK_REALM`.                                                                        |
+| `SETUP_DIR`                                      | `./setup`                               | Directory with the MinIO policies and storage profiles, using the layout of [`setup`](setup).                                                  |
+| `KATTA_SERVER_IMAGE`                             | `ghcr.io/shift7-ch/katta-server:latest` | Image to build Katta Server from.                                                                                                              |
+| `MINIO_USER_ACCESS_KEY`, `MINIO_USER_SECRET_KEY` |                                         | MinIO user created for the storage profile with static storage access.                                                                         |
+| `HUB_INITIAL_LICENSE`, `HUB_INITIAL_ID`          |                                         | License of Katta Server. [`.env`](.env) sets a test license.                                                                                   |
 | `CSP_CONNECT_SRC_EXTRA`                          |                                         | Additional `connect-src` sources for the Content-Security-Policy header of Katta Server, such as the S3 and STS endpoints of storage profiles. |
 
 Relative paths resolve against the directory containing `compose.yaml`.
@@ -59,6 +59,10 @@ The realm also contains the service accounts of the `cryptomatorhub-system` clie
 | MinIO Console | http://localhost:9101 |                                                                           |
 | MinIO S3 API  | http://localhost:9100 |                                                                           |
 
+> [!TIP]
+> To access with Katta Desktop over plain HTTP (no HTTPS/TLS required) in a development or test environment,
+install the _Katta Server (HTTP)_ connection profile from _Preferences → Profiles_.
+
 ### MinIO STS Setup
 
 To configure MinIO for STS storage access with the `local` profile, use the `setup minio` command of the
@@ -68,26 +72,19 @@ To configure MinIO for STS storage access with the `local` profile, use the `set
 katta setup minio --hubUrl http://localhost:8280 --endpointUrl http://localhost:9100 --accessKey=minioadmin --secretKey=minioadmin
 ```
 
-### Katta Desktop
-
-To connect with Katta Desktop over plain HTTP without TLS, copy the [Katta Server.cyberduckprofile](https://docs.katta.io) to:
-
-- **macOS** `~/Library/Group Containers/KD9X6Y7KA2.cloud.katta.desktop/Library/Application Support/Katta/Profiles`
-- **Windows** `%APPDATA%\Katta\Profiles`
-
 ## Contents
 
-| Path                                                     | Description                                                                          |
-|----------------------------------------------------------|--------------------------------------------------------------------------------------|
-| [`compose.yaml`](compose.yaml)                           | Services for Katta Server, Keycloak, PostgreSQL and MinIO.                           |
-| [`.env`](.env)                                           | Variables for running all services locally.                                          |
-| [`hub`](hub)                                             | Image for Katta Server with an nginx reverse proxy.                                  |
-| [`hub-setup-storage-profile`](hub-setup-storage-profile) | Image for the job creating the demo storage profiles in Katta Server.                |
-| [`minio`](minio)                                         | Image for MinIO with an nginx reverse proxy.                                         |
-| [`minio-setup`](minio-setup)                             | Image for the jobs configuring and tracing MinIO.                                    |
-| [`nginx`](nginx)                                         | Reverse proxy templates for Keycloak, Katta Server and MinIO.                        |
+| Path                                                     | Description                                                                                                             |
+|----------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| [`compose.yaml`](compose.yaml)                           | Services for Katta Server, Keycloak, PostgreSQL and MinIO.                                                              |
+| [`.env`](.env)                                           | Variables for running all services locally.                                                                             |
+| [`hub`](hub)                                             | Image for Katta Server with an nginx reverse proxy.                                                                     |
+| [`hub-setup-storage-profile`](hub-setup-storage-profile) | Image for the job creating the demo storage profiles in Katta Server.                                                   |
+| [`minio`](minio)                                         | Image for MinIO with an nginx reverse proxy.                                                                            |
+| [`minio-setup`](minio-setup)                             | Image for the jobs configuring and tracing MinIO.                                                                       |
+| [`nginx`](nginx)                                         | Reverse proxy templates for Keycloak, Katta Server and MinIO.                                                           |
 | [`keycloak`](keycloak)                                   | Default realm with the clients required by Katta Server, and a self-signed certificate for HTTPS. For development only. |
-| [`setup`](setup)                                         | Default MinIO policies and storage profiles.                                         |
+| [`setup`](setup)                                         | Default MinIO policies and storage profiles.                                                                            |
 
 ## License
 
