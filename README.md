@@ -39,6 +39,21 @@ To provide your own values, pass a complete copy with `--env-file`, which replac
 Relative paths resolve against the directory containing `compose.yaml`.
 Use absolute paths to provide a realm or setup files from another project.
 
+#### Changing Variables of a Running Environment
+
+Compose resolves variables when it creates a container, so `docker compose restart` keeps the previous values.
+For example, after changing `CSP_CONNECT_SRC_EXTRA`, recreate only Katta Server with the profile the environment was started with:
+
+```bash
+docker compose --profile demo up -d --no-deps hub
+```
+
+To verify the Content-Security-Policy header, run:
+
+```bash
+curl -sI http://localhost:8280/ | grep -i content-security-policy
+```
+
 ### Provisioned Users
 
 | User                                      | Password     | Description                                                   |
