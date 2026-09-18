@@ -27,17 +27,30 @@ docker compose --profile demo down
 All variables are set in [`.env`](.env), which Compose loads automatically.
 To provide your own values, pass a complete copy with `--env-file`, which replaces `.env`.
 
-| Variable                                         | Default                                 | Description                                                                                                                                    |
-|--------------------------------------------------|-----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
-| `KEYCLOAK_REALM_FILE`                            | `./keycloak/cryptomator-realm.json`     | Realm imported into Keycloak. Its name must match `HUB_KEYCLOAK_REALM`.                                                                        |
-| `SETUP_DIR`                                      | `./setup`                               | Directory with the MinIO policies and storage profiles, using the layout of [`setup`](setup).                                                  |
-| `KATTA_SERVER_IMAGE`                             | `ghcr.io/shift7-ch/katta-server:latest` | Image to build Katta Server from.                                                                                                              |
-| `MINIO_USER_ACCESS_KEY`, `MINIO_USER_SECRET_KEY` |                                         | MinIO user created for the storage profile with static storage access.                                                                         |
-| `HUB_INITIAL_LICENSE`, `HUB_INITIAL_ID`          |                                         | License of Katta Server. [`.env`](.env) sets a test license.                                                                                   |
-| `CSP_CONNECT_SRC_EXTRA`                          |                                         | Additional `connect-src` sources for the Content-Security-Policy header of Katta Server, such as the S3 and STS endpoints of storage profiles. |
+| Variable                                         | Default                                       | Description                                                                                                                                    |
+|--------------------------------------------------|-----------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| `KATTA_CHART`                                    | `oci://ghcr.io/shift7-ch/charts/katta-server` | Helm chart of Katta Server to render the Keycloak realm from. See [Keycloak Realm](#keycloak-realm).                                           |
+| `KATTA_CHART_VERSION`                            | pinned pre-release                            | Version of the Helm chart. Leave empty for the latest release.                                                                                 |
+| `SETUP_DIR`                                      | `./setup`                                     | Directory with the MinIO policies and storage profiles, using the layout of [`setup`](setup).                                                  |
+| `KATTA_SERVER_IMAGE`                             | `ghcr.io/shift7-ch/katta-server:latest`       | Image to build Katta Server from.                                                                                                              |
+| `MINIO_USER_ACCESS_KEY`, `MINIO_USER_SECRET_KEY` |                                               | MinIO user created for the storage profile with static storage access.                                                                         |
+| `HUB_INITIAL_LICENSE`, `HUB_INITIAL_ID`          |                                               | License of Katta Server. [`.env`](.env) sets a test license.                                                                                   |
+| `CSP_CONNECT_SRC_EXTRA`                          |                                               | Additional `connect-src` sources for the Content-Security-Policy header of Katta Server, such as the S3 and STS endpoints of storage profiles. |
 
 Relative paths resolve against the directory containing `compose.yaml`.
-Use absolute paths to provide a realm or setup files from another project.
+Use absolute paths to provide setup files from another project.
+
+#### Keycloak Realm
+
+The service `keycloak-realm` renders the realm with `helm template` from the realm template
+`_realm.tpl` of the Katta Server Helm chart
+using the variables of the env file, and Keycloak imports it on start. There is no realm file in this project.
+To render the realm from a local checkout of Katta Server instead, mount its `chart` directory into `keycloak-realm` with a
+[Compose override file](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/) and set `KATTA_CHART` to the mount path.
+
+After the import, the service `keycloak-allow-http` sets `sslRequired` to `NONE` for the `master` and the Katta realm, so that
+Keycloak accepts plain HTTP requests from the host. The realm does not enable direct access grants.
+The `demo` profile creates the storage profiles with the service account of client `cryptomatorhub-system`.
 
 #### Changing Variables of a Running Environment
 
@@ -56,13 +69,13 @@ curl -sI http://localhost:8280/ | grep -i content-security-policy
 
 ### Provisioned Users
 
-| User                                      | Password     | Description                                                   |
-|-------------------------------------------|--------------|---------------------------------------------------------------|
-| `admin`                                   | `admin`      | Katta administrator and Keycloak realm administrator.         |
-| `minioadmin`                              | `minioadmin` | MinIO root user.                                              |
-| `testuser`                                | `top-secret` | MinIO user for static storage access.                         |
+| User         | Password     | Description                                           |
+|--------------|--------------|-------------------------------------------------------|
+| `admin`      | `admin`      | Katta administrator and Keycloak realm administrator. |
+| `minioadmin` | `minioadmin` | MinIO root user.                                      |
+| `testuser`   | `top-secret` | MinIO user for static storage access.                 |
 
-The realm also contains the service accounts of the `cryptomatorhub-system` client used by Katta Server and of the `cryptomatorhub-cli` client used by the Katta Admin CLI.
+The realm also contains the service account of the `cryptomatorhub-system` client used by Katta Server.
 
 ### Endpoints
 
@@ -98,7 +111,7 @@ katta setup minio --hubUrl http://localhost:8280 --endpointUrl http://localhost:
 | [`minio`](minio)                                         | Image for MinIO with an nginx reverse proxy.                                                                            |
 | [`minio-setup`](minio-setup)                             | Image for the jobs configuring and tracing MinIO.                                                                       |
 | [`nginx`](nginx)                                         | Reverse proxy templates for Keycloak, Katta Server and MinIO.                                                           |
-| [`keycloak`](keycloak)                                   | Default realm with the clients required by Katta Server, and a self-signed certificate for HTTPS. For development only. |
+| [`keycloak`](keycloak)                                   | Self-signed certificate for HTTPS of Keycloak. For development only.                                                    |
 | [`setup`](setup)                                         | Default MinIO policies and storage profiles.                                                                            |
 
 ## License

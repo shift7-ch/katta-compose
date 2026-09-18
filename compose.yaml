@@ -1,4 +1,33 @@
 services:
+  # renders the realm from the Keycloak realm template of the Katta Server Helm chart
+  keycloak-realm:
+    profiles: [ local, demo ]
+    image: alpine/helm:3.19.0
+    entrypoint: [ "/bin/sh","-c" ]
+    command:
+      - |
+        # no -x as the command line contains the admin password and client secrets
+        set -euo pipefail
+
+        apk add --no-cache yq-go
+        helm template katta ${KATTA_CHART:-oci://ghcr.io/shift7-ch/charts/katta-server} $${KATTA_CHART_VERSION:+--version "$$KATTA_CHART_VERSION"} \
+          --show-only templates/keycloak-secret.yaml \
+          --set-string urls.hub.public=${HUB_URL} \
+          --set-string urls.kc.public=${HUB_KEYCLOAK_URL}${HUB_KEYCLOAK_BASEPATH} \
+          --set-string hub.config.keycloakRealm=${HUB_KEYCLOAK_REALM} \
+          --set-string keycloak.realmBootstrap.realmId=${HUB_KEYCLOAK_REALM} \
+          --set-string hub.admin.username=${HUB_ADMIN_USER} \
+          --set-string hub.admin.password=${HUB_ADMIN_PASSWORD} \
+          --set hub.admin.passwordTemporary=false \
+          --set-string hub.secrets.systemClientSecret=${HUB_KEYCLOAK_SYSTEM_CLIENT_SECRET} \
+          --set-string hub.secrets.cryptomatorvaultsClientSecret=${HUB_KEYCLOAK_OIDC_CRYPTOMATOR_VAULTS_CLIENT_SECRET} \
+          | yq '.stringData["realm.json"]' > /import/keycloak.json
+        test -s /import/keycloak.json
+    environment:
+      KATTA_CHART_VERSION: ${KATTA_CHART_VERSION:-}
+    volumes:
+      - keycloak-import:/import
+
   keycloak:
     profiles: [ local, demo ]
     image: "ghcr.io/shift7-ch/keycloak:26.5.6"
@@ -17,8 +46,8 @@ services:
       KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/dev/certs/keycloak-server.crt.pem
       KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/dev/certs/keycloak-server.key.pem
     volumes:
-      # renamed because of https://github.com/keycloak/keycloak/issues/37569
-      - ${KEYCLOAK_REALM_FILE:-./keycloak/cryptomator-realm.json}:/opt/keycloak/data/import/keycloak.json
+      # realm rendered by keycloak-realm as keycloak.json because of https://github.com/keycloak/keycloak/issues/37569
+      - keycloak-import:/opt/keycloak/data/import:ro
       - ./keycloak/certs:/opt/keycloak/dev/certs
     # hub to Keycloak communication inside Docker network (http://keycloak:8180) goes to the container internal port! Therefore, we need to start keycloak with the same port `--http-port 8180`
     command: start-dev --import-realm --db=dev-mem --health-enabled=true --hostname ${HUB_KEYCLOAK_HOSTNAME} --http-port ${HUB_KEYCLOAK_HTTP_PORT}
@@ -27,9 +56,12 @@ services:
       interval: 5s
       timeout: 10s
       retries: 15
+    depends_on:
+      keycloak-realm:
+        condition: service_completed_successfully
 
 
-  keycloak-enable-direct-access-grant:
+  keycloak-allow-http:
     profiles: [ local, demo ]
     image: "ghcr.io/shift7-ch/keycloak:26.5.6"
     pull_policy: missing
@@ -40,18 +72,7 @@ services:
 
         # fix for Docker Desktop 4.42.1 based on https://github.com/keycloak/keycloak/discussions/12155
         /opt/keycloak/bin/kcadm.sh update --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm master --user admin --password admin realms/master -s sslRequired=NONE
-        /opt/keycloak/bin/kcadm.sh update --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm ${HUB_KEYCLOAK_REALM} --user admin --password admin realms/${HUB_KEYCLOAK_REALM} -s sslRequired=NONE
-
-        # enable direct access grants in client cryptomator and cryptomatorhub for integration testing and manual exploration
-        # "http://127.0.0.1/*" matches any port as Keycloak ignores the port of loopback redirect URIs, which is required for
-        # the ephemeral 127.0.0.1:<random> redirect URI of the Katta Admin CLI authorization code flow
-        CLIENT_ID=`/opt/keycloak/bin/kcadm.sh get clients --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm ${HUB_KEYCLOAK_REALM} --user admin --password admin --fields id -q clientId=cryptomator | grep "id" | sed -e 's/.*"id" : //g' | sed -e 's/"//g'`
-        /opt/keycloak/bin/kcadm.sh update clients/$$CLIENT_ID --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm ${HUB_KEYCLOAK_REALM} --user admin --password admin  -s "directAccessGrantsEnabled=true" -s 'redirectUris=["http://localhost:${HUB_PORT}/*", "http://127.0.0.1/*", "x-katta-action:oauth"]'
-        CLIENT_ID=`/opt/keycloak/bin/kcadm.sh get clients --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm ${HUB_KEYCLOAK_REALM} --user admin --password admin --fields id -q clientId=cryptomatorhub | grep "id" | sed -e 's/.*"id" : //g' | sed -e 's/"//g'`
-        /opt/keycloak/bin/kcadm.sh update clients/$$CLIENT_ID --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm ${HUB_KEYCLOAK_REALM} --user admin --password admin -s "directAccessGrantsEnabled=true" -s 'redirectUris=["http://localhost:${HUB_PORT}/*", "http://127.0.0.1:${HUB_PORT}/*", "x-katta-action:oauth"]'
-        # allow redirect URI from localhost for "attended" mode for client cryptomatorhub, i.e. dev wants to interact directly with the running setup
-        CLIENT_ID_CRYPTOMATORHUB=`/opt/keycloak/bin/kcadm.sh get clients --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm ${HUB_KEYCLOAK_REALM} --user admin --password admin --fields id -q clientId=cryptomatorhub | grep "id" | sed -e 's/.*"id" : //g' | sed -e 's/"//g'`
-        /opt/keycloak/bin/kcadm.sh update clients/$$CLIENT_ID_CRYPTOMATORHUB --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm ${HUB_KEYCLOAK_REALM} --user admin --password admin -s 'redirectUris=["${HUB_URL}/*", "http://127.0.0.1:${HUB_PORT}/*", "x-katta-action:oauth"]'
+        /opt/keycloak/bin/kcadm.sh update --server http://keycloak:${HUB_KEYCLOAK_HTTP_PORT} --realm master --user admin --password admin realms/${HUB_KEYCLOAK_REALM} -s sslRequired=NONE
 
     depends_on:
       keycloak-ready:
@@ -267,7 +288,7 @@ services:
     depends_on:
       keycloak-ready:
         condition: service_completed_successfully
-      keycloak-enable-direct-access-grant:
+      keycloak-allow-http:
         condition: service_completed_successfully
         required: false
       postgres:
@@ -409,10 +430,9 @@ services:
         curl --version
         curl -v --fail -X POST ${HUB_KEYCLOAK_URL}${HUB_KEYCLOAK_BASEPATH}/realms/${HUB_KEYCLOAK_REALM}/protocol/openid-connect/token \
               -H "Content-Type: application/x-www-form-urlencoded" \
-              -d "client_id=cryptomator" \
-              -d "grant_type=password" \
-              -d "username=${HUB_ADMIN_USER}" \
-              -d "password=${HUB_ADMIN_PASSWORD}" > /tmp/access_token.txt
+              -d "client_id=cryptomatorhub-system" \
+              -d "client_secret=${HUB_KEYCLOAK_SYSTEM_CLIENT_SECRET}" \
+              -d "grant_type=client_credentials" > /tmp/access_token.txt
         cat /tmp/access_token.txt
         export ACCESS_TOKEN=`cat /tmp/access_token.txt | jq ".access_token" | tr -d '"'`
 
@@ -447,3 +467,6 @@ services:
     depends_on:
       hub_setup_storage_profile:
         condition: service_completed_successfully
+
+volumes:
+  keycloak-import:
