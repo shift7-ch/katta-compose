@@ -43,7 +43,7 @@ Use absolute paths to provide setup files from another project.
 #### Keycloak Realm
 
 The service `keycloak-realm` renders the realm with `helm template` from the realm template
-[`_realm.tpl`](https://github.com/shift7-ch/katta-server/blob/feature/cipherduck-uvf/chart/templates/_realm.tpl) of the Katta Server Helm chart
+`_realm.tpl` of the Katta Server Helm chart
 using the variables of the env file, and Keycloak imports it on start. There is no realm file in this project.
 To render the realm from a local checkout of Katta Server instead, mount its `chart` directory into `keycloak-realm` with a
 [Compose override file](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/) and set `KATTA_CHART` to the mount path.
