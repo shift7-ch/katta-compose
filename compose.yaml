@@ -387,7 +387,6 @@ services:
       hub:
         condition: service_healthy
     volumes:
-      - ${SETUP_DIR:-./setup}:/setup
       - ./nginx/keycloak.conf.template:/etc/nginx/conf.d/keycloak.conf.template:ro
       - ./nginx/hub.conf.template:/etc/nginx/conf.d/hub.conf.template:ro
     entrypoint: [ "/bin/bash","-c" ]
@@ -426,31 +425,33 @@ services:
         nginx -s quit || true
         nginx
 
-        ls /setup
-        curl --version
-        curl -v --fail -X POST ${HUB_KEYCLOAK_URL}${HUB_KEYCLOAK_BASEPATH}/realms/${HUB_KEYCLOAK_REALM}/protocol/openid-connect/token \
-              -H "Content-Type: application/x-www-form-urlencoded" \
-              -d "client_id=cryptomatorhub-system" \
-              -d "client_secret=${HUB_KEYCLOAK_SYSTEM_CLIENT_SECRET}" \
-              -d "grant_type=client_credentials" > /tmp/access_token.txt
-        cat /tmp/access_token.txt
-        export ACCESS_TOKEN=`cat /tmp/access_token.txt | jq ".access_token" | tr -d '"'`
-
-        echo $$ACCESS_TOKEN
+        # service account of client cryptomatorhub-system with realm role admin
+        # separate assignment so that set -e catches a failing katta accesstoken
+        ACCESS_TOKEN=$$(katta accesstoken \
+          --tokenUrl ${HUB_KEYCLOAK_URL}${HUB_KEYCLOAK_BASEPATH}/realms/${HUB_KEYCLOAK_REALM}/protocol/openid-connect/token \
+          --clientId cryptomatorhub-system \
+          --clientSecret ${HUB_KEYCLOAK_SYSTEM_CLIENT_SECRET})
+        export ACCESS_TOKEN
 
         # MinIO Storage Profiles
-        envsubst < /setup/minio_sts/storage_profile.json > /tmp/minio_sts_storage_profile.json
-        cat /tmp/minio_sts_storage_profile.json
-        RESPONSE=$$(curl -v -o /dev/null -w "%{http_code}" -X POST ${HUB_URL}/api/storageprofile -d @/tmp/minio_sts_storage_profile.json -H "Content-Type: application/json" -H "Authorization: Bearer $$ACCESS_TOKEN")
-        if [ "$$RESPONSE" != "200" ] && [ "$$RESPONSE" != "201" ] && [ "$$RESPONSE" != "409" ]; then echo "Unexpected status $$RESPONSE for s3sts"; exit 1; fi
+        katta storageprofile minio sts \
+          --hubUrl ${HUB_URL} --accessToken $$ACCESS_TOKEN \
+          --name "MinIO S3 STS" \
+          --endpointUrl ${MINIO_SCHEME}://${MINIO_HOSTNAME}:${MINIO_PORT} \
+          --bucketPrefix katta-test- \
+          --region eu-central-1 \
+          --regions eu-west-1 --regions eu-west-2 --regions eu-west-3 --regions eu-north-1 \
+          --regions eu-south-1 --regions eu-south-2 --regions eu-central-1 --regions eu-central-2 \
+          --stsRoleCreateBucketClient arn:minio:iam:::role/IqZpDC5ahW_DCAvZPZA4ACjEnDE \
+          --stsRoleCreateBucketHub arn:minio:iam:::role/HGKdlY4eFFsXVvJmwlMYMhmbnDE \
+          --stsRoleAccessBucket arn:minio:iam:::role/Hdms6XDZ6oOpuWYI3gu4gmgHN94
 
-        envsubst < /setup/minio_static/storage_profile.json > /tmp/minio_static_storage_profile.json
-        cat /tmp/minio_static_storage_profile.json
-        RESPONSE=$$(curl -v -o /dev/null -w "%{http_code}" -X POST ${HUB_URL}/api/storageprofile -d @/tmp/minio_static_storage_profile.json -H "Content-Type: application/json" -H "Authorization: Bearer $$ACCESS_TOKEN")
-        if [ "$$RESPONSE" != "200" ] && [ "$$RESPONSE" != "201" ] && [ "$$RESPONSE" != "409" ]; then echo "Unexpected status $$RESPONSE for s3static"; exit 1; fi
-
-        curl -v --fail -X GET ${HUB_URL}/api/storageprofile -H "Authorization: Bearer $$ACCESS_TOKEN"
-        echo "createbuckets successful"
+        katta storageprofile s3 static \
+          --hubUrl ${HUB_URL} --accessToken $$ACCESS_TOKEN \
+          --name "MinIO S3 static" \
+          --endpointUrl ${MINIO_SCHEME}://${MINIO_HOSTNAME}:${MINIO_PORT} \
+          --bucketPrefix katta-test- \
+          --region eu-central-1
 
   # last service(s) must not exit for up --wait to succeed...
   wait:
