@@ -1,5 +1,9 @@
 # Katta Compose
 
+[![Compose](https://github.com/shift7-ch/katta-compose/actions/workflows/compose.yml/badge.svg)](https://github.com/shift7-ch/katta-compose/actions/workflows/compose.yml)
+
+> [Katta](https://katta.cloud/): transform your S3 storage into a secure, team-friendly workspace with client-side encryption.
+
 Docker Compose environment to run [Katta Server](https://github.com/shift7-ch/katta-server) with Keycloak, PostgreSQL and MinIO.
 
 Extracted with its history from [katta-clientlib](https://github.com/shift7-ch/katta-clientlib), where it served as the integration test environment.
