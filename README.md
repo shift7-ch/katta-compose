@@ -6,8 +6,6 @@
 
 Docker Compose environment to run [Katta Server](https://github.com/shift7-ch/katta-server) with Keycloak, PostgreSQL and MinIO.
 
-Extracted with its history from [katta-clientlib](https://github.com/shift7-ch/katta-clientlib), where it served as the integration test environment.
-
 ## Usage
 
 ```bash
@@ -17,6 +15,10 @@ docker compose --profile demo down
 
 > [!TIP]
 > Open Katta Web at http://localhost:8280 and log in with username `admin` and password `admin`.
+
+> [!WARNING]
+> This environment is for development, testing and demos only. It uses well-known passwords and client secrets,
+> a committed TLS key for Keycloak, and runs Keycloak and Katta Server in development mode.
 
 ### Profiles
 
@@ -34,9 +36,9 @@ To provide your own values, pass a complete copy with `--env-file`, which replac
 | Variable                                         | Default                                           | Description                                                                                                                                    |
 |--------------------------------------------------|---------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
 | `KATTA_CHART`                                    | `oci://ghcr.io/shift7-ch/katta-helm/katta-server` | Helm chart of Katta Server to render the Keycloak realm from. See [Keycloak Realm](#keycloak-realm).                                           |
-| `KATTA_CHART_VERSION`                            | `^1`                                              | Version or version range of the Helm chart. Leave empty for the latest version.                                                                |
+| `KATTA_CHART_VERSION`                            | `^1`                                              | Version or version range of the Helm chart. Keep at the version of `KATTA_SERVER_IMAGE`. Leave empty for the latest version.                                                                |
 | `SETUP_DIR`                                      | `./setup`                                         | Directory with the MinIO policies and storage profiles, using the layout of [`setup`](setup).                                                  |
-| `KATTA_SERVER_IMAGE`                             | `ghcr.io/shift7-ch/katta-server:latest`           | Image to build Katta Server from.                                                                                                              |
+| `KATTA_SERVER_IMAGE`                             | pinned pre-release           | Image to build Katta Server from.                                                                                                              || `KATTA_COMPOSE_VERSION`                          | `local`                                       | Tag of the images built from this project. Set to a released version to pull the published images.                                             |
 | `MINIO_USER_ACCESS_KEY`, `MINIO_USER_SECRET_KEY` |                                                   | MinIO user created for the storage profile with static storage access.                                                                         |
 | `HUB_INITIAL_LICENSE`, `HUB_INITIAL_ID`          |                                                   | License of Katta Server. [`.env`](.env) sets a test license.                                                                                   |
 | `CSP_CONNECT_SRC_EXTRA`                          |                                                   | Additional `connect-src` sources for the Content-Security-Policy header of Katta Server, such as the S3 and STS endpoints of storage profiles. |
