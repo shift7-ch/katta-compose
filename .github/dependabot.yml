@@ -4,3 +4,19 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+  # images in compose.yaml
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      docker-compose:
+        patterns: [ "*" ]
+  # base images of the images built from this project
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      docker:
+        patterns: [ "*" ]
