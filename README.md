@@ -31,15 +31,15 @@ docker compose --profile demo down
 All variables are set in [`.env`](.env), which Compose loads automatically.
 To provide your own values, pass a complete copy with `--env-file`, which replaces `.env`.
 
-| Variable                                         | Default                                       | Description                                                                                                                                    |
-|--------------------------------------------------|-----------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
-| `KATTA_CHART`                                    | `oci://ghcr.io/shift7-ch/charts/katta-server` | Helm chart of Katta Server to render the Keycloak realm from. See [Keycloak Realm](#keycloak-realm).                                           |
-| `KATTA_CHART_VERSION`                            | pinned pre-release                            | Version of the Helm chart. Leave empty for the latest release.                                                                                 |
-| `SETUP_DIR`                                      | `./setup`                                     | Directory with the MinIO policies and storage profiles, using the layout of [`setup`](setup).                                                  |
-| `KATTA_SERVER_IMAGE`                             | `ghcr.io/shift7-ch/katta-server:latest`       | Image to build Katta Server from.                                                                                                              |
-| `MINIO_USER_ACCESS_KEY`, `MINIO_USER_SECRET_KEY` |                                               | MinIO user created for the storage profile with static storage access.                                                                         |
-| `HUB_INITIAL_LICENSE`, `HUB_INITIAL_ID`          |                                               | License of Katta Server. [`.env`](.env) sets a test license.                                                                                   |
-| `CSP_CONNECT_SRC_EXTRA`                          |                                               | Additional `connect-src` sources for the Content-Security-Policy header of Katta Server, such as the S3 and STS endpoints of storage profiles. |
+| Variable                                         | Default                                           | Description                                                                                                                                    |
+|--------------------------------------------------|---------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| `KATTA_CHART`                                    | `oci://ghcr.io/shift7-ch/katta-helm/katta-server` | Helm chart of Katta Server to render the Keycloak realm from. See [Keycloak Realm](#keycloak-realm).                                           |
+| `KATTA_CHART_VERSION`                            | `^1`                                              | Version or version range of the Helm chart. Leave empty for the latest version.                                                                |
+| `SETUP_DIR`                                      | `./setup`                                         | Directory with the MinIO policies and storage profiles, using the layout of [`setup`](setup).                                                  |
+| `KATTA_SERVER_IMAGE`                             | `ghcr.io/shift7-ch/katta-server:latest`           | Image to build Katta Server from.                                                                                                              |
+| `MINIO_USER_ACCESS_KEY`, `MINIO_USER_SECRET_KEY` |                                                   | MinIO user created for the storage profile with static storage access.                                                                         |
+| `HUB_INITIAL_LICENSE`, `HUB_INITIAL_ID`          |                                                   | License of Katta Server. [`.env`](.env) sets a test license.                                                                                   |
+| `CSP_CONNECT_SRC_EXTRA`                          |                                                   | Additional `connect-src` sources for the Content-Security-Policy header of Katta Server, such as the S3 and STS endpoints of storage profiles. |
 
 Relative paths resolve against the directory containing `compose.yaml`.
 Use absolute paths to provide setup files from another project.
@@ -47,9 +47,9 @@ Use absolute paths to provide setup files from another project.
 #### Keycloak Realm
 
 The service `keycloak-realm` renders the realm with `helm template` from the realm template
-`_realm.tpl` of the Katta Server Helm chart
+`_realm.tpl` of the Katta Server Helm chart from [katta-helm](https://github.com/shift7-ch/katta-helm)
 using the variables of the env file, and Keycloak imports it on start. There is no realm file in this project.
-To render the realm from a local checkout of Katta Server instead, mount its `chart` directory into `keycloak-realm` with a
+To render the realm from a local checkout of katta-helm instead, mount it into `keycloak-realm` with a
 [Compose override file](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/) and set `KATTA_CHART` to the mount path.
 
 After the import, the service `keycloak-allow-http` sets `sslRequired` to `NONE` for the `master` and the Katta realm, so that

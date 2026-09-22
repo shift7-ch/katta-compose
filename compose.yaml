@@ -10,7 +10,7 @@ services:
         set -euo pipefail
 
         apk add --no-cache yq-go
-        helm template katta ${KATTA_CHART:-oci://ghcr.io/shift7-ch/charts/katta-server} $${KATTA_CHART_VERSION:+--version "$$KATTA_CHART_VERSION"} \
+        helm template katta ${KATTA_CHART:-oci://ghcr.io/shift7-ch/katta-helm/katta-server} $${KATTA_CHART_VERSION:+--version "$$KATTA_CHART_VERSION"} \
           --show-only templates/keycloak-secret.yaml \
           --set-string urls.hub.public=${HUB_URL} \
           --set-string urls.kc.public=${HUB_KEYCLOAK_URL}${HUB_KEYCLOAK_BASEPATH} \
