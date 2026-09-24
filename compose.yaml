@@ -220,25 +220,25 @@ services:
         ls /setup
         /mc config host add myminio ${MINIO_SCHEME}://minio:${MINIO_PORT} minioadmin minioadmin
 
-        /mc admin policy create myminio katta_create_bucket_policy /setup/minio_sts/create_bucket_policy.json
-        /mc admin policy create myminio katta_access_bucket_policy /setup/minio_sts/access_bucket_policy.json
+        /mc admin policy create myminio katta-createbucketpolicy /setup/minio_sts/create_bucket_policy.json
+        /mc admin policy create myminio katta-accessbucketpolicy /setup/minio_sts/access_bucket_policy.json
 
 
         /mc idp openid add myminio cryptomator \
           config_url="${HUB_KEYCLOAK_URL}${HUB_KEYCLOAK_BASEPATH}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration" \
           client_id="cryptomator" \
           client_secret="ignore-me" \
-          role_policy="katta_create_bucket_policy" || echo "Could not add idp - probably already defined"
+          role_policy="katta-createbucketpolicy" || echo "Could not add idp - probably already defined"
         /mc idp openid add myminio cryptomatorhub \
           config_url="${HUB_KEYCLOAK_URL}${HUB_KEYCLOAK_BASEPATH}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration" \
           client_id="cryptomatorhub" \
           client_secret="ignore-me" \
-          role_policy="katta_create_bucket_policy" || echo "Could not add idp - probably already defined"
+          role_policy="katta-createbucketpolicy" || echo "Could not add idp - probably already defined"
         /mc idp openid add myminio cryptomatorvaults \
           config_url="${HUB_KEYCLOAK_URL}${HUB_KEYCLOAK_BASEPATH}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration" \
           client_id="cryptomatorvaults" \
           client_secret="ignore-me" \
-          role_policy="katta_access_bucket_policy" || echo "Could not add idp - probably already defined"
+          role_policy="katta-accessbucketpolicy" || echo "Could not add idp - probably already defined"
 
         # see https://github.com/bitnami/charts/pull/28118
         /mc admin service restart myminio --wait --json
