@@ -325,7 +325,9 @@ services:
   # last service(s) must not exit for up --wait to succeed...
   wait:
     profiles: [ local, demo ]
-    image: nginx:1.31.5
+    image: alpine/curl:8.17.0
+    entrypoint: [ "sleep" ]
+    command: [ "infinity" ]
     depends_on:
       minio_trace:
         condition: service_started
@@ -333,7 +335,9 @@ services:
   # last service(s) must not exit for up --wait to succeed...
   wait_demo:
     profiles: [ demo ]
-    image: nginx:1.31.5
+    image: alpine/curl:8.17.0
+    entrypoint: [ "sleep" ]
+    command: [ "infinity" ]
     depends_on:
       hub_setup_storage_profile:
         condition: service_completed_successfully
