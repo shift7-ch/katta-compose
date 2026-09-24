@@ -431,7 +431,6 @@ services:
           --hubUrl ${HUB_URL} --accessToken $$ACCESS_TOKEN \
           --name "MinIO S3 STS" \
           --endpointUrl ${MINIO_SCHEME}://${MINIO_HOSTNAME}:${MINIO_PORT} \
-          --bucketPrefix katta-test- \
           --region eu-central-1 \
           --regions eu-west-1 --regions eu-west-2 --regions eu-west-3 --regions eu-north-1 \
           --regions eu-south-1 --regions eu-south-2 --regions eu-central-1 --regions eu-central-2 \
@@ -444,7 +443,6 @@ services:
           --hubUrl ${HUB_URL} --accessToken $$ACCESS_TOKEN \
           --name "MinIO S3 static" \
           --endpointUrl ${MINIO_SCHEME}://${MINIO_HOSTNAME}:${MINIO_PORT} \
-          --bucketPrefix katta-test- \
           --region eu-central-1 \
           --skipIfExists
 
