@@ -218,7 +218,7 @@ services:
         fi
 
         ls /setup
-        /mc config host add myminio ${MINIO_SCHEME}://minio:${MINIO_PORT} minioadmin minioadmin
+        /mc alias set myminio ${MINIO_SCHEME}://minio:${MINIO_PORT} minioadmin minioadmin
 
         /mc admin policy create myminio katta_create_bucket_policy /setup/minio_sts/create_bucket_policy.json
         /mc admin policy create myminio katta_access_bucket_policy /setup/minio_sts/access_bucket_policy.json
@@ -276,7 +276,7 @@ services:
     command:
       - |
         set -euxo pipefail
-        /mc config host add myminio ${MINIO_SCHEME}://minio:${MINIO_PORT} minioadmin minioadmin
+        /mc alias set myminio ${MINIO_SCHEME}://minio:${MINIO_PORT} minioadmin minioadmin
         /mc admin trace -v myminio
 
   hub:
