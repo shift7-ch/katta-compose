@@ -11,7 +11,7 @@
                 "s3:ListBucketVersions"
             ],
             "Resource": [
-                "arn:aws:s3:::katta-test-*"
+                "arn:aws:s3:::katta-*"
             ]
         },
         {
@@ -24,7 +24,7 @@
                 "s3:PutObject"
             ],
             "Resource": [
-                "arn:aws:s3:::katta-test-*/*"
+                "arn:aws:s3:::katta-*/*"
             ]
         }
     ]
