@@ -282,14 +282,16 @@ services:
 
   hub_setup_storage_profile:
     profiles: [ demo ]
-    build:
-      context: ./hub-setup-storage-profile
+    # Image of the Katta Admin CLI with a shell, so that the access token can be passed to the
+    # storage profile commands.
+    image: ghcr.io/shift7-ch/katta-admin-cli:shell
     depends_on:
       keycloak-ready:
         condition: service_completed_successfully
       hub:
         condition: service_healthy
-    entrypoint: [ "/bin/bash","-c" ]
+    # busybox shell of the image variant with a shell
+    entrypoint: [ "/busybox/sh","-c" ]
     command:
       - |
         set -euxo pipefail

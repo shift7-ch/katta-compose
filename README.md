@@ -121,11 +121,10 @@ katta setup minio --hubUrl http://hub.localhost:8280 --endpointUrl http://minio.
 | [`compose.yaml`](compose.yaml)                           | Services for Katta Server, Keycloak, PostgreSQL and MinIO.                                                              |
 | [`.env`](.env)                                           | Variables for running all services locally.                                                                             |
 | [`hub`](hub)                                             | Image for Katta Server.                                                                                                 |
-| [`hub-setup-storage-profile`](hub-setup-storage-profile) | Image for the job creating the demo storage profiles in Katta Server.                                                   |
 | [`minio`](minio)                                         | Image for MinIO.                                                                                                        |
 | [`minio-setup`](minio-setup)                             | Image for the jobs configuring and tracing MinIO.                                                                       |
 | [`keycloak`](keycloak)                                   | Self-signed certificate for HTTPS of Keycloak. For development only.                                                    |
-| [`setup`](setup)                                         | Default MinIO policies and storage profiles.                                                                            |
+| [`setup`](setup)                                         | Default MinIO policies.                                                                                                 |
 
 ## License
 
