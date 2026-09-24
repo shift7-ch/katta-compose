@@ -255,12 +255,6 @@ services:
         /mc idp openid ls myminio
         /mc idp openid info myminio
 
-        /mc admin user add myminio ${MINIO_USER_ACCESS_KEY} ${MINIO_USER_SECRET_KEY}
-        /mc admin policy create myminio testuser_accesspolicy /setup/minio_static/access_bucket_policy.json
-        /mc admin policy create myminio testuser_createpolicy /setup/minio_static/create_bucket_policy.json
-        /mc admin policy attach myminio testuser_accesspolicy --user ${MINIO_USER_ACCESS_KEY}
-        /mc admin policy attach myminio testuser_createpolicy --user ${MINIO_USER_ACCESS_KEY}
-
   minio_trace:
     profiles: [ local, demo ]
     build:
