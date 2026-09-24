@@ -245,13 +245,6 @@ services:
         # sleep necessary despite --wait...
         sleep 5
 
-        /mc idp openid enable myminio cryptomator
-        /mc idp openid enable myminio cryptomatorhub
-        /mc idp openid enable myminio cryptomatorvaults
-
-        /mc admin service restart myminio --wait --json
-        sleep 5
-
         /mc idp openid ls myminio
         /mc idp openid info myminio
 
