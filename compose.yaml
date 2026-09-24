@@ -248,6 +248,10 @@ services:
         /mc idp openid ls myminio
         /mc idp openid info myminio
 
+        # Policies for users with static access credentials, ready to attach when such a user is added.
+        /mc admin policy create myminio testuser_accesspolicy /setup/minio_static/access_bucket_policy.json
+        /mc admin policy create myminio testuser_createpolicy /setup/minio_static/create_bucket_policy.json
+
   minio_trace:
     profiles: [ local, demo ]
     build:
