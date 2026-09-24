@@ -14,7 +14,7 @@ docker compose --profile demo down
 ```
 
 > [!TIP]
-> Open Katta Web at http://localhost:8280 and log in with username `admin` and password `admin`.
+> Open Katta Web at http://hub.localhost:8280 and log in with username `admin` and password `admin`.
 
 > [!WARNING]
 > This environment is for development, testing and demos only. It uses well-known passwords and client secrets,
@@ -69,7 +69,7 @@ docker compose --profile demo up -d --no-deps hub
 To verify the Content-Security-Policy header, run:
 
 ```bash
-curl -sI http://localhost:8280/ | grep -i content-security-policy
+curl -sI http://hub.localhost:8280/ | grep -i content-security-policy
 ```
 
 ### Provisioned Users
@@ -84,13 +84,22 @@ The realm also contains the service account of the `cryptomatorhub-system` clien
 
 ### Endpoints
 
-| Component     | URL                   | Discovery                                                                 |
-|---------------|-----------------------|---------------------------------------------------------------------------|
-| Katta Web     | http://localhost:8280 |                                                                           |
-| Katta API     | http://localhost:8280 | http://localhost:8280/api/config                                          |
-| Keycloak      | http://localhost:8380 | http://localhost:8380/realms/cryptomator/.well-known/openid-configuration |
-| MinIO Console | http://localhost:9101 |                                                                           |
-| MinIO S3 API  | http://localhost:9100 |                                                                           |
+| Component     | URL                            | Discovery                                                                          |
+|---------------|--------------------------------|------------------------------------------------------------------------------------|
+| Katta Web     | http://hub.localhost:8280      |                                                                                    |
+| Katta API     | http://hub.localhost:8280      | http://hub.localhost:8280/api/config                                               |
+| Keycloak      | http://keycloak.localhost:8380 | http://keycloak.localhost:8380/realms/cryptomator/.well-known/openid-configuration |
+| MinIO Console | http://minio.localhost:9101    |                                                                                    |
+| MinIO S3 API  | http://minio.localhost:9100    |                                                                                    |
+
+The hostnames are subdomains of `localhost`, which resolve to the loopback address on the host as specified in
+[RFC 6761](https://www.rfc-editor.org/rfc/rfc6761.html#section-6.3), and to the containers through network aliases
+inside the Docker network. Therefore, the same URLs work in the browser on the host and in the containers, such as for the issuer of tokens.
+Browsers and recent versions of curl resolve subdomains of `localhost` without DNS, but the system resolver of macOS does not. For other clients on the host, add the hostnames to `/etc/hosts`:
+
+```
+127.0.0.1 hub.localhost keycloak.localhost minio.localhost
+```
 
 > [!TIP]
 > To access with Katta Desktop over plain HTTP (no HTTPS/TLS required) in a development or test environment,
@@ -102,7 +111,7 @@ To configure MinIO for STS storage access with the `local` profile, use the `set
 [Katta Admin CLI](https://github.com/shift7-ch/katta-clientlib/blob/main/admin-cli/README.md#setup-minio-using-oidc-provider-and-security-token-service-sts-with-setup-command):
 
 ```bash
-katta setup minio --hubUrl http://localhost:8280 --endpointUrl http://localhost:9100 --accessKey=minioadmin --secretKey=minioadmin
+katta setup minio --hubUrl http://hub.localhost:8280 --endpointUrl http://minio.localhost:9100 --accessKey=minioadmin --secretKey=minioadmin
 ```
 
 ## Contents
@@ -111,11 +120,10 @@ katta setup minio --hubUrl http://localhost:8280 --endpointUrl http://localhost:
 |----------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
 | [`compose.yaml`](compose.yaml)                           | Services for Katta Server, Keycloak, PostgreSQL and MinIO.                                                              |
 | [`.env`](.env)                                           | Variables for running all services locally.                                                                             |
-| [`hub`](hub)                                             | Image for Katta Server with an nginx reverse proxy.                                                                     |
+| [`hub`](hub)                                             | Image for Katta Server.                                                                                                 |
 | [`hub-setup-storage-profile`](hub-setup-storage-profile) | Image for the job creating the demo storage profiles in Katta Server.                                                   |
-| [`minio`](minio)                                         | Image for MinIO with an nginx reverse proxy.                                                                            |
+| [`minio`](minio)                                         | Image for MinIO.                                                                                                        |
 | [`minio-setup`](minio-setup)                             | Image for the jobs configuring and tracing MinIO.                                                                       |
-| [`nginx`](nginx)                                         | Reverse proxy templates for Keycloak, Katta Server and MinIO.                                                           |
 | [`keycloak`](keycloak)                                   | Self-signed certificate for HTTPS of Keycloak. For development only.                                                    |
 | [`setup`](setup)                                         | Default MinIO policies and storage profiles.                                                                            |
 
