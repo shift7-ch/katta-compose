@@ -444,14 +444,16 @@ services:
           --regions eu-south-1 --regions eu-south-2 --regions eu-central-1 --regions eu-central-2 \
           --stsRoleCreateBucketClient arn:minio:iam:::role/IqZpDC5ahW_DCAvZPZA4ACjEnDE \
           --stsRoleCreateBucketHub arn:minio:iam:::role/HGKdlY4eFFsXVvJmwlMYMhmbnDE \
-          --stsRoleAccessBucket arn:minio:iam:::role/Hdms6XDZ6oOpuWYI3gu4gmgHN94
+          --stsRoleAccessBucket arn:minio:iam:::role/Hdms6XDZ6oOpuWYI3gu4gmgHN94 \
+          --skipIfExists
 
         katta storageprofile s3 static \
           --hubUrl ${HUB_URL} --accessToken $$ACCESS_TOKEN \
           --name "MinIO S3 static" \
           --endpointUrl ${MINIO_SCHEME}://${MINIO_HOSTNAME}:${MINIO_PORT} \
           --bucketPrefix katta-test- \
-          --region eu-central-1
+          --region eu-central-1 \
+          --skipIfExists
 
   # last service(s) must not exit for up --wait to succeed...
   wait:
