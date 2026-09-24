@@ -220,46 +220,37 @@ services:
         ls /setup
         /mc alias set myminio ${MINIO_SCHEME}://minio:${MINIO_PORT} minioadmin minioadmin
 
-        /mc admin policy create myminio katta_create_bucket_policy /setup/minio_sts/create_bucket_policy.json
-        /mc admin policy create myminio katta_access_bucket_policy /setup/minio_sts/access_bucket_policy.json
+        /mc admin policy create myminio katta-createbucketpolicy /setup/minio_sts/create_bucket_policy.json
+        /mc admin policy create myminio katta-accessbucketpolicy /setup/minio_sts/access_bucket_policy.json
 
 
         /mc idp openid add myminio cryptomator \
           config_url="${HUB_KEYCLOAK_URL}${HUB_KEYCLOAK_BASEPATH}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration" \
           client_id="cryptomator" \
           client_secret="ignore-me" \
-          role_policy="katta_create_bucket_policy" || echo "Could not add idp - probably already defined"
+          role_policy="katta-createbucketpolicy" || echo "Could not add idp - probably already defined"
         /mc idp openid add myminio cryptomatorhub \
           config_url="${HUB_KEYCLOAK_URL}${HUB_KEYCLOAK_BASEPATH}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration" \
           client_id="cryptomatorhub" \
           client_secret="ignore-me" \
-          role_policy="katta_create_bucket_policy" || echo "Could not add idp - probably already defined"
+          role_policy="katta-createbucketpolicy" || echo "Could not add idp - probably already defined"
         /mc idp openid add myminio cryptomatorvaults \
           config_url="${HUB_KEYCLOAK_URL}${HUB_KEYCLOAK_BASEPATH}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration" \
           client_id="cryptomatorvaults" \
           client_secret="ignore-me" \
-          role_policy="katta_access_bucket_policy" || echo "Could not add idp - probably already defined"
+          role_policy="katta-accessbucketpolicy" || echo "Could not add idp - probably already defined"
 
         # see https://github.com/bitnami/charts/pull/28118
         /mc admin service restart myminio --wait --json
         # sleep necessary despite --wait...
         sleep 5
 
-        /mc idp openid enable myminio cryptomator
-        /mc idp openid enable myminio cryptomatorhub
-        /mc idp openid enable myminio cryptomatorvaults
-
-        /mc admin service restart myminio --wait --json
-        sleep 5
-
         /mc idp openid ls myminio
         /mc idp openid info myminio
 
-        /mc admin user add myminio ${MINIO_USER_ACCESS_KEY} ${MINIO_USER_SECRET_KEY}
-        /mc admin policy create myminio testuser_accesspolicy /setup/minio_static/access_bucket_policy.json
-        /mc admin policy create myminio testuser_createpolicy /setup/minio_static/create_bucket_policy.json
-        /mc admin policy attach myminio testuser_accesspolicy --user ${MINIO_USER_ACCESS_KEY}
-        /mc admin policy attach myminio testuser_createpolicy --user ${MINIO_USER_ACCESS_KEY}
+        # Policies for users with static access credentials, ready to attach when such a user is added.
+        /mc admin policy create myminio katta-staticaccessbucketpolicy /setup/minio_static/access_bucket_policy.json
+        /mc admin policy create myminio katta-staticcreatebucketpolicy /setup/minio_static/create_bucket_policy.json
 
   minio_trace:
     profiles: [ local, demo ]
@@ -438,7 +429,6 @@ services:
           --hubUrl ${HUB_URL} --accessToken $$ACCESS_TOKEN \
           --name "MinIO S3 STS" \
           --endpointUrl ${MINIO_SCHEME}://${MINIO_HOSTNAME}:${MINIO_PORT} \
-          --bucketPrefix katta-test- \
           --region eu-central-1 \
           --regions eu-west-1 --regions eu-west-2 --regions eu-west-3 --regions eu-north-1 \
           --regions eu-south-1 --regions eu-south-2 --regions eu-central-1 --regions eu-central-2 \
@@ -451,7 +441,6 @@ services:
           --hubUrl ${HUB_URL} --accessToken $$ACCESS_TOKEN \
           --name "MinIO S3 static" \
           --endpointUrl ${MINIO_SCHEME}://${MINIO_HOSTNAME}:${MINIO_PORT} \
-          --bucketPrefix katta-test- \
           --region eu-central-1 \
           --skipIfExists
 
