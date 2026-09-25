@@ -49,7 +49,11 @@ services:
       # realm rendered by keycloak-realm as keycloak.json because of https://github.com/keycloak/keycloak/issues/37569
       - keycloak-import:/opt/keycloak/data/import:ro
       - ./keycloak/certs:/opt/keycloak/dev/certs
-    # hub to Keycloak communication inside Docker network (http://keycloak:8180) goes to the container internal port! Therefore, we need to start keycloak with the same port `--http-port 8180`
+    networks:
+      default:
+        # HUB_KEYCLOAK_URL resolves to this container inside the Docker network
+        aliases: [ keycloak.localhost ]
+    # requests to HUB_KEYCLOAK_URL inside the Docker network go to the container internal port! Therefore, we need to start keycloak with the same port as published on the host
     command: start-dev --import-realm --db=dev-mem --health-enabled=true --hostname ${HUB_KEYCLOAK_HOSTNAME} --http-port ${HUB_KEYCLOAK_HTTP_PORT}
     healthcheck:
       test: [ "CMD-SHELL", "curl -v --fail http://127.0.0.1:${HUB_KEYCLOAK_HTTP_PORT}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration" ]
@@ -80,30 +84,14 @@ services:
 
   keycloak-ready:
     profiles: [ local, demo, hybrid ]
-    image: nginx:1.31.5
-    volumes:
-      - ./nginx/keycloak.conf.template:/etc/nginx/conf.d/keycloak.conf.template:ro
-    entrypoint: [ "/bin/bash","-c" ]
+    image: busybox:1.37
+    entrypoint: [ "/bin/sh","-c" ]
     command:
       - |
-        set -euxo pipefail
+        set -eux
 
-        apt-get update && apt-get install -y wget
-
-        if [ -n "${HUB_KEYCLOAK_HOSTNAME}" ]; then
-          # inject ports
-          export HUB_KEYCLOAK_HTTP_PORT=${HUB_KEYCLOAK_HTTP_PORT}
-          # DNS resolver of the container runtime (Docker: 127.0.0.11, Podman: network gateway)
-          export DOCKER_RESOLVER="$(awk '/^nameserver[[:space:]]+/{print $2; exit}' /etc/resolv.conf)"
-          envsubst < /etc/nginx/conf.d/keycloak.conf.template >> /etc/nginx/conf.d/default.conf
-          cat /etc/nginx/conf.d/default.conf
-          # reload and verify configuration
-          nginx -t
-          # start reverse proxy to keycloak and hub
-          nginx
-        fi
-
-        until curl -sf ${HUB_KEYCLOAK_URL}${HUB_KEYCLOAK_BASEPATH}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration >/dev/null 2>&1; do sleep 1; done
+        # no curl, as it resolves subdomains of localhost to the loopback address instead of the Keycloak container
+        until wget -q -O /dev/null ${HUB_KEYCLOAK_URL}${HUB_KEYCLOAK_BASEPATH}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration; do sleep 1; done
     healthcheck:
       test: [ "CMD-SHELL", "exit 0" ]
       interval: 10s
@@ -144,10 +132,13 @@ services:
     ports:
       - "${MINIO_PORT}:${MINIO_PORT}"
       - "${MINIO_CONSOLE_PORT}:${MINIO_CONSOLE_PORT}"
+    networks:
+      default:
+        # endpoint URL of the storage profiles resolves to this container inside the Docker network
+        aliases: [ minio.localhost ]
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
-      HUB_KEYCLOAK_HTTP_PORT: ${HUB_KEYCLOAK_HTTP_PORT}
       # Restrict global CORS instead of using wildcard '*' default, see https://docs.min.io/enterprise/aistor-object-store/reference/aistor-server/settings/core/?tab=cors-allow-origin-configuration-setting
       # and https://github.com/minio/minio/blob/master/docs/config/README.md
       # CORS relevant when using Web frontend local for development, not when using Java client.
@@ -158,29 +149,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    volumes:
-      - ./nginx/keycloak.conf.template:/etc/nginx/conf.d/keycloak.conf.template:ro
-    entrypoint: [ "/bin/bash","-c" ]
-    command:
-      - |
-        set -euxo pipefail
-
-        if [ -n "${HUB_KEYCLOAK_HOSTNAME}" ]; then
-          # inject ports
-          # DNS resolver of the container runtime (Docker: 127.0.0.11, Podman: network gateway)
-          export DOCKER_RESOLVER="$(awk '/^nameserver[[:space:]]+/{print $2; exit}' /etc/resolv.conf)"
-          envsubst < /etc/nginx/conf.d/keycloak.conf.template >> /etc/nginx/conf.d/default.conf
-          cat /etc/nginx/conf.d/default.conf
-          # reload and verify configuration
-          nginx -t
-          # start reverse proxy to keycloak
-          systemctl start nginx.service
-          # verify reverse proxy
-          curl --fail http://localhost:${HUB_KEYCLOAK_HTTP_PORT}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration
-          curl --fail http://127.0.0.1:${HUB_KEYCLOAK_HTTP_PORT}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration
-        fi
-
-        /minio server /data --address :${MINIO_PORT} --console-address :${MINIO_CONSOLE_PORT}
+    command: [ "server", "/data", "--address", ":${MINIO_PORT}", "--console-address", ":${MINIO_CONSOLE_PORT}" ]
 
   minio_setup:
     profiles: [ local, demo ]
@@ -193,29 +162,10 @@ services:
         condition: service_completed_successfully
     volumes:
       - ${SETUP_DIR:-./setup}:/setup
-      - ./nginx/keycloak.conf.template:/etc/nginx/conf.d/keycloak.conf.template:ro
-    environment:
-      HUB_KEYCLOAK_HTTP_PORT: ${HUB_KEYCLOAK_HTTP_PORT}
-      HUB_KEYCLOAK_HOSTNAME: ${HUB_KEYCLOAK_HOSTNAME}
     entrypoint: [ "/bin/bash","-c" ]
     command:
       - |
         set -euxo pipefail
-
-        if [ -n "${HUB_KEYCLOAK_HOSTNAME}" ]; then
-          # inject ports
-          # DNS resolver of the container runtime (Docker: 127.0.0.11, Podman: network gateway)
-          export DOCKER_RESOLVER="$(awk '/^nameserver[[:space:]]+/{print $2; exit}' /etc/resolv.conf)"
-          envsubst < /etc/nginx/conf.d/keycloak.conf.template >> /etc/nginx/conf.d/default.conf
-          cat /etc/nginx/conf.d/default.conf
-          # reload and verify configuration
-          nginx -t
-          # start reverse proxy to keycloak
-          systemctl start nginx.service
-          # verify reverse proxy
-          curl --fail http://localhost:${HUB_KEYCLOAK_HTTP_PORT}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration
-          curl --fail http://127.0.0.1:${HUB_KEYCLOAK_HTTP_PORT}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration
-        fi
 
         ls /setup
         /mc alias set myminio ${MINIO_SCHEME}://minio:${MINIO_PORT} minioadmin minioadmin
@@ -260,9 +210,6 @@ services:
       minio_setup:
         # restarts during minio setup!
         condition: service_completed_successfully
-    environment:
-      HUB_KEYCLOAK_HTTP_PORT: ${HUB_KEYCLOAK_HTTP_PORT}
-      HUB_KEYCLOAK_HOSTNAME: ${HUB_KEYCLOAK_HOSTNAME}
     entrypoint: [ "/bin/bash","-c" ]
     command:
       - |
@@ -325,96 +272,29 @@ services:
       HUB_INITIAL_ID: ${HUB_INITIAL_ID}
       HUB_INITIAL_LICENSE: ${HUB_INITIAL_LICENSE}
       HUB_LICENSE_CHAIN_REQUIRED_CN: "Hub License Issuer CA (Test)"
+    networks:
+      default:
+        # HUB_URL resolves to this container inside the Docker network
+        aliases: [ hub.localhost ]
     ports:
       - "${HUB_PORT}:${HUB_PORT}"
-    volumes:
-      - ./nginx/keycloak.conf.template:/etc/nginx/conf.d/keycloak.conf.template:ro
-      - ./nginx/minio.conf.template:/etc/nginx/conf.d/minio.conf.template:ro
-    entrypoint: [ "/bin/bash","-c" ]
-    command:
-      - |
-        set -euxo pipefail
-
-        # DNS resolver of the container runtime (Docker: 127.0.0.11, Podman: network gateway)
-        export DOCKER_RESOLVER="$(awk '/^nameserver[[:space:]]+/{print $2; exit}' /etc/resolv.conf)"
-
-        if [ -n "${HUB_KEYCLOAK_HOSTNAME}" ]; then
-          # inject ports
-          export HUB_KEYCLOAK_HTTP_PORT=${HUB_KEYCLOAK_HTTP_PORT}
-
-          envsubst < /etc/nginx/conf.d/keycloak.conf.template >> /etc/nginx/conf.d/default.conf
-          cat /etc/nginx/conf.d/default.conf
-          # reload and verify configuration
-          nginx -t
-          # start reverse proxy to keycloak and minio
-          nginx
-          # verify reverse proxy
-          curl --fail http://localhost:${HUB_KEYCLOAK_HTTP_PORT}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration
-          curl --fail http://127.0.0.1:${HUB_KEYCLOAK_HTTP_PORT}/realms/${HUB_KEYCLOAK_REALM}/.well-known/openid-configuration
-        fi
-
-        # inject ports
-        export MINIO_PORT=${MINIO_PORT}
-
-        envsubst < /etc/nginx/conf.d/minio.conf.template >> /etc/nginx/conf.d/default.conf
-        cat /etc/nginx/conf.d/default.conf
-        # reload and verify configuration
-        nginx -t
-        # start reverse proxy to keycloak and minio
-        nginx -s reload || nginx
-        # skip verify reverse proxy (MinIO might not be up yet).
-        #        curl --fail ${MINIO_SCHEME}://${MINIO_HOSTNAME}:${MINIO_PORT}/minio/health/ready
-
-
-        /work/application
+    entrypoint: [ "/work/application" ]
 
   hub_setup_storage_profile:
     profiles: [ demo ]
-    build:
-      context: ./hub-setup-storage-profile
+    # Image of the Katta Admin CLI with a shell, so that the access token can be passed to the
+    # storage profile commands.
+    image: ghcr.io/shift7-ch/katta-admin-cli:shell
     depends_on:
       keycloak-ready:
         condition: service_completed_successfully
       hub:
         condition: service_healthy
-    volumes:
-      - ./nginx/keycloak.conf.template:/etc/nginx/conf.d/keycloak.conf.template:ro
-      - ./nginx/hub.conf.template:/etc/nginx/conf.d/hub.conf.template:ro
-    entrypoint: [ "/bin/bash","-c" ]
-    environment:
-      HUB_URL: ${HUB_URL}
-      HUB_KEYCLOAK_HTTP_PORT: ${HUB_KEYCLOAK_HTTP_PORT}
-      HUB_PORT: ${HUB_PORT}
-      MINIO_SCHEME: ${MINIO_SCHEME}
-      MINIO_HOSTNAME: ${MINIO_HOSTNAME}
-      MINIO_PORT: ${MINIO_PORT}
+    # busybox shell of the image variant with a shell
+    entrypoint: [ "/busybox/sh","-c" ]
     command:
       - |
         set -euxo pipefail
-
-        # DNS resolver of the container runtime (Docker: 127.0.0.11, Podman: network gateway)
-        export DOCKER_RESOLVER="$(awk '/^nameserver[[:space:]]+/{print $2; exit}' /etc/resolv.conf)"
-
-        if [ -n "${HUB_KEYCLOAK_HOSTNAME}" ]; then
-          # inject ports
-          envsubst < /etc/nginx/conf.d/keycloak.conf.template >> /etc/nginx/conf.d/default.conf
-          cat /etc/nginx/conf.d/default.conf
-          # reload and verify configuration
-          nginx -t
-          # start reverse proxy to keycloak and hub
-          nginx -s quit || true
-          nginx
-        fi
-
-
-        # inject ports
-        envsubst < /etc/nginx/conf.d/hub.conf.template >> /etc/nginx/conf.d/default.conf
-        cat /etc/nginx/conf.d/default.conf
-        # reload and verify configuration
-        nginx -t
-        # start reverse proxy to keycloak and hub
-        nginx -s quit || true
-        nginx
 
         # service account of client cryptomatorhub-system with realm role admin
         # separate assignment so that set -e catches a failing katta accesstoken
@@ -447,7 +327,9 @@ services:
   # last service(s) must not exit for up --wait to succeed...
   wait:
     profiles: [ local, demo ]
-    image: nginx:1.31.5
+    image: alpine/curl:8.17.0
+    entrypoint: [ "sleep" ]
+    command: [ "infinity" ]
     depends_on:
       minio_trace:
         condition: service_started
@@ -455,7 +337,9 @@ services:
   # last service(s) must not exit for up --wait to succeed...
   wait_demo:
     profiles: [ demo ]
-    image: nginx:1.31.5
+    image: alpine/curl:8.17.0
+    entrypoint: [ "sleep" ]
+    command: [ "infinity" ]
     depends_on:
       hub_setup_storage_profile:
         condition: service_completed_successfully

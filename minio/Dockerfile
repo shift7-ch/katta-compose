@@ -5,7 +5,7 @@ FROM alpine/minio:RELEASE.2025-10-15T17-29-55Z@sha256:cf23643a6cf9ce159c57643ceb
 
 FROM ubuntu:24.04
 COPY --from=minio /usr/local/bin/minio /minio
-RUN apt-get update && apt-get install -y wget curl nginx systemctl gettext-base && \
-    systemctl enable nginx.service
+# curl for the healthcheck of the service
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 ENTRYPOINT ["/minio"]
