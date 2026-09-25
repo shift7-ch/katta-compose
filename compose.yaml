@@ -2,7 +2,7 @@ services:
   # renders the realm from the Keycloak realm template of the Katta Server Helm chart
   keycloak-realm:
     profiles: [ local, demo ]
-    image: alpine/helm:3.19.0
+    image: alpine/helm:4.3.0
     entrypoint: [ "/bin/sh","-c" ]
     command:
       - |
@@ -30,7 +30,7 @@ services:
 
   keycloak:
     profiles: [ local, demo ]
-    image: "ghcr.io/shift7-ch/keycloak:26.5.6"
+    image: "ghcr.io/shift7-ch/keycloak:26.7.1"
     pull_policy: missing
     ports:
       - "${HUB_KEYCLOAK_HTTP_PORT:-1}:${HUB_KEYCLOAK_HTTP_PORT:-1}"
@@ -67,7 +67,7 @@ services:
 
   keycloak-allow-http:
     profiles: [ local, demo ]
-    image: "ghcr.io/shift7-ch/keycloak:26.5.6"
+    image: "ghcr.io/shift7-ch/keycloak:26.7.1"
     pull_policy: missing
     entrypoint: [ "/bin/bash","-c" ]
     command:
@@ -327,7 +327,7 @@ services:
   # last service(s) must not exit for up --wait to succeed...
   wait:
     profiles: [ local, demo ]
-    image: alpine/curl:8.17.0
+    image: alpine/curl:8.22.0
     entrypoint: [ "sleep" ]
     command: [ "infinity" ]
     depends_on:
@@ -337,7 +337,7 @@ services:
   # last service(s) must not exit for up --wait to succeed...
   wait_demo:
     profiles: [ demo ]
-    image: alpine/curl:8.17.0
+    image: alpine/curl:8.22.0
     entrypoint: [ "sleep" ]
     command: [ "infinity" ]
     depends_on:
