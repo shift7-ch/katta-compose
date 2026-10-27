@@ -14,7 +14,7 @@ updates:
         patterns: [ "*" ]
   # base images of the images built from this project
   - package-ecosystem: "docker"
-    directory: "/"
+    directories: [ "/hub", "/minio", "/minio-setup" ]
     schedule:
       interval: "weekly"
     groups:
