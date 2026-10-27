@@ -33,14 +33,14 @@ docker compose --profile demo down
 All variables are set in [`.env`](.env), which Compose loads automatically.
 To provide your own values, pass a complete copy with `--env-file`, which replaces `.env`.
 
-| Variable                                         | Default                                           | Description                                                                                                                                    |
-|--------------------------------------------------|---------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
-| `KATTA_CHART`                                    | `oci://ghcr.io/shift7-ch/katta-helm/katta-server` | Helm chart of Katta Server to render the Keycloak realm from. See [Keycloak Realm](#keycloak-realm).                                           |
-| `KATTA_CHART_VERSION`                            | `^1`                                              | Version or version range of the Helm chart. Keep at the version of `KATTA_SERVER_IMAGE`. Leave empty for the latest version.                   |
-| `SETUP_DIR`                                      | `./setup`                                         | Directory with the MinIO policies, using the layout of [`setup`](setup).                                                                       |
-| `KATTA_SERVER_IMAGE`                             | `ghcr.io/shift7-ch/katta-server:latest`           | Image to build Katta Server from.                                                                                                              || `KATTA_COMPOSE_VERSION`                          | `local`                                       | Tag of the images built from this project. Set to a released version to pull the published images.                                             |
-| `HUB_INITIAL_LICENSE`, `HUB_INITIAL_ID`          |                                                   | License of Katta Server. [`.env`](.env) sets a test license.                                                                                   |
-| `CSP_CONNECT_SRC_EXTRA`                          |                                                   | Additional `connect-src` sources for the Content-Security-Policy header of Katta Server, such as the S3 and STS endpoints of storage profiles. |
+| Variable                                | Default                                           | Description                                                                                                                                    |
+|-----------------------------------------|---------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| `KATTA_CHART`                           | `oci://ghcr.io/shift7-ch/katta-helm/katta-server` | Helm chart of Katta Server to render the Keycloak realm from. See [Keycloak Realm](#keycloak-realm).                                           |
+| `KATTA_CHART_VERSION`                   | `^1`                                              | Version or version range of the Helm chart. Keep at the version of `KATTA_SERVER_IMAGE`. Leave empty for the latest version.                   |
+| `SETUP_DIR`                             | `./setup`                                         | Directory with the MinIO policies, using the layout of [`setup`](setup).                                                                       |
+| `KATTA_SERVER_IMAGE`                    | `ghcr.io/shift7-ch/katta-server:latest`           | Image to build Katta Server from.                                                                                                              || `KATTA_COMPOSE_VERSION`                          | `local`                                       | Tag of the images built from this project. Set to a released version to pull the published images.                                             |
+| `HUB_INITIAL_LICENSE`, `HUB_INITIAL_ID` |                                                   | License of Katta Server. [`.env`](.env) sets a test license.                                                                                   |
+| `CSP_CONNECT_SRC_EXTRA`                 |                                                   | Additional `connect-src` sources for the Content-Security-Policy header of Katta Server, such as the S3 and STS endpoints of storage profiles. |
 
 Relative paths resolve against the directory containing `compose.yaml`.
 Use absolute paths to provide setup files from another project.
@@ -95,7 +95,8 @@ The realm also contains the service account of the `cryptomatorhub-system` clien
 The hostnames are subdomains of `localhost`, which resolve to the loopback address on the host as specified in
 [RFC 6761](https://www.rfc-editor.org/rfc/rfc6761.html#section-6.3), and to the containers through network aliases
 inside the Docker network. Therefore, the same URLs work in the browser on the host and in the containers, such as for the issuer of tokens.
-Browsers and recent versions of curl resolve subdomains of `localhost` without DNS, but the system resolver of macOS does not. For other clients on the host, add the hostnames to `/etc/hosts`:
+Browsers and recent versions of curl resolve subdomains of `localhost` without DNS, but the system resolver of macOS does not. For other clients on the host,
+add the hostnames to `/etc/hosts`:
 
 ```
 127.0.0.1 hub.localhost keycloak.localhost minio.localhost
@@ -103,7 +104,9 @@ Browsers and recent versions of curl resolve subdomains of `localhost` without D
 
 > [!TIP]
 > To access with Katta Desktop over plain HTTP (no HTTPS/TLS required) in a development or test environment,
-install the _Katta Server (HTTP)_ connection profile from _Preferences → Profiles_.
+> install the _Katta Server (HTTP)_ connection profile from _Preferences → Profiles_.
+
+See also [Desktop Setup](https://docs.katta.cloud/user-guide/desktop-setup/).
 
 ### MinIO STS Setup
 
@@ -116,15 +119,15 @@ katta setup minio --hubUrl http://hub.localhost:8280 --endpointUrl http://minio.
 
 ## Contents
 
-| Path                                                     | Description                                                                                                             |
-|----------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
-| [`compose.yaml`](compose.yaml)                           | Services for Katta Server, Keycloak, PostgreSQL and MinIO.                                                              |
-| [`.env`](.env)                                           | Variables for running all services locally.                                                                             |
-| [`hub`](hub)                                             | Image for Katta Server.                                                                                                 |
-| [`minio`](minio)                                         | Image for MinIO.                                                                                                        |
-| [`minio-setup`](minio-setup)                             | Image for the jobs configuring and tracing MinIO.                                                                       |
-| [`keycloak`](keycloak)                                   | Self-signed certificate for HTTPS of Keycloak. For development only.                                                    |
-| [`setup`](setup)                                         | Default MinIO policies.                                                                                                 |
+| Path                           | Description                                                          |
+|--------------------------------|----------------------------------------------------------------------|
+| [`compose.yaml`](compose.yaml) | Services for Katta Server, Keycloak, PostgreSQL and MinIO.           |
+| [`.env`](.env)                 | Variables for running all services locally.                          |
+| [`hub`](hub)                   | Image for Katta Server.                                              |
+| [`minio`](minio)               | Image for MinIO.                                                     |
+| [`minio-setup`](minio-setup)   | Image for the jobs configuring and tracing MinIO.                    |
+| [`keycloak`](keycloak)         | Self-signed certificate for HTTPS of Keycloak. For development only. |
+| [`setup`](setup)               | Default MinIO policies.                                              |
 
 ## License
 
