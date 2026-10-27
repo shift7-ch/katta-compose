@@ -1,7 +1,7 @@
 # The MinIO images are no longer publicly pullable from quay.io or Docker Hub, see
 # https://github.com/shift7-ch/katta-compose/issues/22, and the binaries are no longer available from
 # dl.min.io (410 Gone). The release assets of mc on GitHub are still published.
-FROM ubuntu:24.04
+FROM ubuntu:25.10
 ARG MC_VERSION=RELEASE.2025-08-13T08-35-41Z
 ARG TARGETARCH
 # Digests of mc.linux-amd64 and mc.linux-arm64, see
